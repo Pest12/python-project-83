@@ -21,7 +21,7 @@ pyflakes = ">=3.1.0,<3.2.0"
 name = "gunicorn"
 version = "21.2.0"
 description = "WSGI HTTP Server for UNIX"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.5"
 files = [
@@ -54,7 +54,7 @@ files = [
 name = "packaging"
 version = "23.2"
 description = "Core utilities for Python packages"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -89,4 +89,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "b1c93eb9a84420b08787b6627cf092183295687d322bc0e162571dd40e8286ae"
+content-hash = "b9faa59cb5afab4e6fdfe86d36cfe416f2f7f046fa84e175f41f496bee139106"
