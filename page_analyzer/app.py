@@ -49,7 +49,7 @@ def get_all_urls(connection):
         cursor.execute(
             """SELECT id, name, created_at
                FROM urls
-               ORDER BY created_at DESC;"""
+               ORDER BY id DESC;"""
         )
         return cursor.fetchall()
 
@@ -83,13 +83,13 @@ def index():
 
 
 def validate(url):
-    errors = {}
-    if len(url) > 255:
-        errors['url'] = "URL превышает 255 символов"
-    if validators.url(url):
-        errors['url'] = "Некорректный URL"
+    errors = []
     if not url:
-        errors['url'] = "Введите URL"
+        errors.append("URL обязателен")
+    elif not validators.url(url):
+        errors.append("Некорректный URL")
+    elif len(url) > 255:
+        errors.append("URL превышает 255 символов")
     return errors
 
 
@@ -108,6 +108,8 @@ def add_url():
     url_name = request.form.get('url')
     errors = validate(url_name)
     if errors:
+        for error in errors:
+            flash(error, 'error')
         return render_template(
             'index.html',
         ), 422
@@ -125,11 +127,9 @@ def add_url():
 
 @app.route("/urls/int:<id>")
 def url_info(id):
-    messages = get_flashed_messages(with_categories=True)
     with connect_database(DATABASE_URL) as conn:
         url = get_url_by_id(conn, id)
     return render_template(
         'url_id.html',
-        messages=messages,
         url=url,
     )
