@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 from datetime import date
 from psycopg2.extras import NamedTupleCursor
 from contextlib import contextmanager
+from bs4 import BeautifulSoup
 
 
 load_dotenv()
@@ -73,14 +74,14 @@ def get_url_by_id(connection, id):
         return cursor.fetchone()
 
 
-def create_check(connection, id, status_code):
+def create_check(connection, id, status_code, h1, title, description):
     current_date = date.today()
     with connection.cursor(cursor_factory=NamedTupleCursor) as cursor:
         cursor.execute(
             """INSERT INTO url_checks (
             url_id, status_code, h1, title, description, created_at)
-            VALUES (%s, %s, '-', '-', '-', %s);
-            """, (id, status_code, current_date,))
+            VALUES (%s, %s, %s, %s, %s, %s);
+            """, (id, status_code, h1, title, description, current_date,))
 
 
 def get_last_check(connection):
@@ -103,6 +104,19 @@ def get_all_checks(connection, id):
             """, (id,))
         return cursor.fetchall()
 
+def get_seo(html):
+    soup = BeautifulSoup(html, 'html.parser')
+    title = soup.title.string
+    if soup.h1:
+        h1 = soup.h1.string
+    else:
+        h1 = ''
+    description_content = soup.find('meta', attrs={'name': 'description'})
+    if description_content:
+        description = description_content.get('content')
+    else:
+        description = ''
+    return title, h1, description
 
 @app.errorhandler(404)
 def not_found(error):
@@ -184,6 +198,7 @@ def url_check(id):
             flash('Произошла ошибка при проверке', 'error')
             return redirect(url_for('url_info', id=id))
         status_code = request.status_code
-        create_check(conn, id, status_code)
+        title, h1, description = get_seo(request.text)
+        create_check(conn, id, status_code, h1, title, description)
     flash('Страница успешно проверена', 'success')
     return redirect(url_for('url_info', id=id))
