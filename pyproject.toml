@@ -14,10 +14,10 @@ python-dotenv = "^1.0.0"
 validators = "^0.22.0"
 requests = "^2.31.0"
 beautifulsoup4 = "^4.12.2"
-flake8 = "^6.1.0"
+flask = "^3.0.0"
 
 [tool.poetry.group.dev.dependencies]
-flask = "^3.0.0"
+flake8 = "^6.1.0"
 
 [build-system]
 requires = ["poetry-core"]
