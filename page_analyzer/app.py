@@ -2,13 +2,12 @@ import psycopg2
 import validators
 import os
 import requests
-from flask import Flask, render_template, request, flash, redirect, url_for, get_flashed_messages
+from flask import Flask, render_template, request, flash, redirect, url_for
 from dotenv import load_dotenv
 from urllib.parse import urlparse
-from datetime import date
-from psycopg2.extras import NamedTupleCursor
 from contextlib import contextmanager
 from bs4 import BeautifulSoup
+from page_analyzer import database
 
 
 load_dotenv()
@@ -23,10 +22,8 @@ def connect_database(url):
     try:
         connection = psycopg2.connect(url)
         yield connection
-    except Exception:
-        if connection:
-            connection.rollback()
-        raise
+    except Exception as _ex:
+        print("[INFO] Error while working with PostgreSQL", _ex)
     else:
         if connection:
             connection.commit()
@@ -35,88 +32,14 @@ def connect_database(url):
             connection.close()
 
 
-def create_url(connection, name):
-    current_date = date.today()
-    with connection.cursor(cursor_factory=NamedTupleCursor) as cursor:
-        cursor.execute(
-           """INSERT INTO urls (name, created_at)
-              VALUES (%s, %s) RETURNING id;
-              """, (name, current_date)
-        )
-        return cursor.fetchone()[0]
-
-
-def get_all_urls(connection):
-    with connection.cursor(cursor_factory=NamedTupleCursor) as cursor:
-        cursor.execute(
-            """SELECT id, name, created_at
-               FROM urls
-               ORDER BY id DESC;"""
-        )
-        return cursor.fetchall()
-
-
-def get_url_by_name(connection, name):
-    with connection.cursor(cursor_factory=NamedTupleCursor) as cursor:
-        cursor.execute(
-            """SELECT * FROM urls
-               WHERE name = %s;
-               """, (name,))
-        return cursor.fetchone()
-
-
-def get_url_by_id(connection, id):
-    with connection.cursor(cursor_factory=NamedTupleCursor) as cursor:
-        cursor.execute(
-            """SELECT * FROM urls
-               WHERE id = %s;
-               """, (id,))
-        return cursor.fetchone()
-
-
-def create_check(connection, id, status_code, h1, title, description):
-    current_date = date.today()
-    with connection.cursor(cursor_factory=NamedTupleCursor) as cursor:
-        cursor.execute(
-            """INSERT INTO url_checks (
-            url_id, status_code, h1, title, description, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s);
-            """, (id, status_code, h1, title, description, current_date,))
-
-
-def get_last_check(connection):
-    with connection.cursor(cursor_factory=NamedTupleCursor) as cursor:
-        cursor.execute(
-            """SELECT DISTINCT ON (url_id)
-            id, url_id, status_code, h1, title, description, created_at
-            FROM url_checks
-            ORDER BY url_id, created_at DESC;
-            """)
-        return cursor.fetchall()
-
-
-def get_all_checks(connection, id):
-    with connection.cursor(cursor_factory=NamedTupleCursor) as cursor:
-        cursor.execute(
-            """SELECT * FROM url_checks
-            WHERE url_id = %s
-            ORDER BY id DESC;
-            """, (id,))
-        return cursor.fetchall()
-
 def get_seo(html):
     soup = BeautifulSoup(html, 'html.parser')
-    title = soup.title.string
-    if soup.h1:
-        h1 = soup.h1.string
-    else:
-        h1 = ''
+    title = soup.title.string if soup.title else ''
+    h1 = soup.h1.string if soup.h1 else ''
     description_content = soup.find('meta', attrs={'name': 'description'})
-    if description_content:
-        description = description_content.get('content')
-    else:
-        description = ''
+    description = description_content.get('content') if description_content else ''
     return title, h1, description
+
 
 @app.errorhandler(404)
 def not_found(error):
@@ -142,9 +65,9 @@ def validate(url):
 @app.route("/urls")
 def urls():
     with connect_database(DATABASE_URL) as conn:
-        urls = get_all_urls(conn)
+        urls = database.get_all_urls(conn)
         url_checks = {
-            item.url_id: item for item in get_last_check(conn)
+            url.url_id: url for url in database.get_last_check(conn)
         }
     return render_template(
         '/urls.html',
@@ -166,11 +89,11 @@ def add_url():
     parsed_url = urlparse(url_name)
     normalized_url = f'{parsed_url.scheme}://{parsed_url.netloc}'
     with connect_database(DATABASE_URL) as conn:
-        check_url = get_url_by_name(conn, normalized_url)
+        check_url = database.get_url_by_name(conn, normalized_url)
         if check_url:
             flash('Страница уже существует', 'info')
             return redirect(url_for('url_info', id=check_url[0]))
-        url_id = create_url(conn, normalized_url)
+        url_id = database.create_url(conn, normalized_url)
     flash('Страница успешно добавлена', 'success')
     return redirect(url_for('url_info', id=url_id))
 
@@ -178,8 +101,8 @@ def add_url():
 @app.route("/urls/<int:id>")
 def url_info(id):
     with connect_database(DATABASE_URL) as conn:
-        url = get_url_by_id(conn, id)
-        url_checks = get_all_checks(conn, id)
+        url = database.get_url_by_id(conn, id)
+        url_checks = database.get_all_checks(conn, id)
     return render_template(
         'url_id.html',
         url=url,
@@ -190,7 +113,7 @@ def url_info(id):
 @app.post("/urls/<int:id>/checks")
 def url_check(id):
     with connect_database(DATABASE_URL) as conn:
-        url = get_url_by_id(conn, id)
+        url = database.get_url_by_id(conn, id)
         try:
             request = requests.get(url.name)
             request.raise_for_status()
@@ -199,6 +122,6 @@ def url_check(id):
             return redirect(url_for('url_info', id=id))
         status_code = request.status_code
         title, h1, description = get_seo(request.text)
-        create_check(conn, id, status_code, h1, title, description)
+        database.create_check(conn, id, status_code, h1, title, description)
     flash('Страница успешно проверена', 'success')
     return redirect(url_for('url_info', id=id))
