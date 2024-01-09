@@ -1,13 +1,12 @@
 import psycopg2
-import validators
 import os
 import requests
 from flask import Flask, render_template, request, flash, redirect, url_for
 from dotenv import load_dotenv
-from urllib.parse import urlparse
 from contextlib import contextmanager
-from bs4 import BeautifulSoup
+from page_analyzer.html import get_seo, get_normalized_url
 from page_analyzer import database
+from page_analyzer.validate import validate
 
 
 load_dotenv()
@@ -32,15 +31,6 @@ def connect_database(url):
             connection.close()
 
 
-def get_seo(html):
-    soup = BeautifulSoup(html, 'html.parser')
-    title = soup.title.string if soup.title else ''
-    h1 = soup.h1.string if soup.h1 else ''
-    meta = soup.find('meta', attrs={'name': 'description'})
-    description = meta.get('content') if meta else ''
-    return title, h1, description
-
-
 @app.errorhandler(404)
 def not_found(error):
     return 'Oops!', 404
@@ -51,17 +41,6 @@ def index():
     return render_template('index.html')
 
 
-def validate(url):
-    errors = []
-    if not url:
-        errors.append("URL обязателен")
-    elif not validators.url(url):
-        errors.append("Некорректный URL")
-    elif len(url) > 255:
-        errors.append("URL превышает 255 символов")
-    return errors
-
-
 @app.route("/urls")
 def urls():
     with connect_database(DATABASE_URL) as conn:
@@ -69,11 +48,11 @@ def urls():
         url_checks = {
             url.url_id: url for url in database.get_last_check(conn)
         }
-    return render_template(
-        '/urls.html',
-        urls=urls,
-        url_checks=url_checks
-    )
+        return render_template(
+            '/urls.html',
+            urls=urls,
+            url_checks=url_checks
+        )
 
 
 @app.post("/urls")
@@ -86,8 +65,7 @@ def add_url():
         return render_template(
             'index.html',
         ), 422
-    parsed_url = urlparse(url_name)
-    normalized_url = f'{parsed_url.scheme}://{parsed_url.netloc}'
+    normalized_url = get_normalized_url(url_name)
     with connect_database(DATABASE_URL) as conn:
         check_url = database.get_url_by_name(conn, normalized_url)
         if check_url:
@@ -103,11 +81,11 @@ def url_info(id):
     with connect_database(DATABASE_URL) as conn:
         url = database.get_url_by_id(conn, id)
         url_checks = database.get_all_checks(conn, id)
-    return render_template(
-        'url_id.html',
-        url=url,
-        checks=url_checks,
-    )
+        return render_template(
+            'url_id.html',
+            url=url,
+            checks=url_checks,
+        )
 
 
 @app.post("/urls/<int:id>/checks")
