@@ -24,8 +24,8 @@
             <td> {{ url_checks[url.id].created_at }}</td>
             <td> {{ url_checks[url.id].status_code }}</td>
             {% else %}
-            <td></td>
-            <td></td>
+            <td>Проверка не проводилась</td>
+            <td>Проверка не проводилась</td>
             {% endif %}
           </tr>
           {% endfor %}          

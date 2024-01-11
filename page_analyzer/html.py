@@ -1,4 +1,3 @@
-from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 
 
@@ -9,8 +8,3 @@ def get_seo(html):
     meta = soup.find('meta', attrs={'name': 'description'})
     description = meta.get('content') if meta else ''
     return title, h1, description
-
-
-def get_normalized_url(url):
-    parsed_url = urlparse(url)
-    return f"{parsed_url.scheme}://{parsed_url.netloc}"

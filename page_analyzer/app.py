@@ -4,9 +4,9 @@ import requests
 from flask import Flask, render_template, request, flash, redirect, url_for
 from dotenv import load_dotenv
 from contextlib import contextmanager
-from page_analyzer.html import get_seo, get_normalized_url
+from page_analyzer.html import get_seo
 from page_analyzer import database
-from page_analyzer.validate import validate
+from page_analyzer.urls import validate, get_normalized_url
 
 
 load_dotenv()

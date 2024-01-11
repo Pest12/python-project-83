@@ -1,3 +1,4 @@
+from urllib.parse import urlparse
 import validators
 
 
@@ -10,3 +11,8 @@ def validate(url):
     elif len(url) > 255:
         errors.append("URL превышает 255 символов")
     return errors
+
+
+def get_normalized_url(url):
+    parsed_url = urlparse(url)
+    return f"{parsed_url.scheme}://{parsed_url.netloc}"
