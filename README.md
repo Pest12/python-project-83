@@ -24,3 +24,12 @@ make start
 
 
 ## Link to Render.com: https://pest12-hexlet-project.onrender.com/
+
+
+## Development server
+
+
+To run the site locally on the development server, you need to:
+- Create a database and two tables. The tables structure can be found in database.sql
+- Fill `DATABASE_URL` and `SECRET_KEY` in .env.sample
+- Run ```make local```
