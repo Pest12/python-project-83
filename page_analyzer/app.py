@@ -44,14 +44,10 @@ def index():
 @app.route("/urls")
 def urls():
     with connect_database(DATABASE_URL) as conn:
-        urls = database.get_all_urls(conn)
-        url_checks = {
-            url.url_id: url for url in database.get_last_check(conn)
-        }
+        data = database.get_all_urls_and_last_check(conn)
         return render_template(
             '/urls.html',
-            urls=urls,
-            url_checks=url_checks
+            data=data,
         )
 
 
@@ -95,11 +91,11 @@ def url_check(id):
         try:
             request = requests.get(url.name)
             request.raise_for_status()
+            status_code = request.status_code
+            title, h1, description = get_seo(request.text)
+            database.create_check(conn, id, status_code, h1, title, description)
+            flash('Страница успешно проверена', 'success')
+            return redirect(url_for('url_info', id=id))
         except requests.RequestException:
             flash('Произошла ошибка при проверке', 'error')
             return redirect(url_for('url_info', id=id))
-        status_code = request.status_code
-        title, h1, description = get_seo(request.text)
-        database.create_check(conn, id, status_code, h1, title, description)
-    flash('Страница успешно проверена', 'success')
-    return redirect(url_for('url_info', id=id))

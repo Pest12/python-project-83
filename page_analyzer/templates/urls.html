@@ -14,18 +14,18 @@
           </tr>
         </thead>
         <tbody>
-          {% for url in urls %}
+          {% for url in data %}
           <tr>
             <td>{{ url.id }}</td>
             <td>
               <a href="{{ url_for('url_info', id=url.id) }}">{{ url.name }}</a>
             </td>
-            {% if url.id in url_checks %}
-            <td> {{ url_checks[url.id].created_at }}</td>
-            <td> {{ url_checks[url.id].status_code }}</td>
+            {% if url.created_at and url.status_code %}
+            <td> {{ url.created_at }} </td>
+            <td> {{ url.status_code }} </td>
             {% else %}
-            <td>Проверка не проводилась</td>
-            <td>Проверка не проводилась</td>
+            <td> Проверка не проводилась </td>
+            <td> Проверка не проводилась </td>
             {% endif %}
           </tr>
           {% endfor %}          

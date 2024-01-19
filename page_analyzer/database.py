@@ -13,11 +13,21 @@ def create_url(connection, name):
         return cursor.fetchone()[0]
 
 
-def get_all_urls(connection):
+def get_all_urls_and_last_check(connection):
     with connection.cursor(cursor_factory=NamedTupleCursor) as cursor:
         cursor.execute(
-            """SELECT * FROM urls
-               ORDER BY id DESC;
+            """SELECT urls.id, urls.name,
+                url_checks.created_at,
+                url_checks.status_code
+                FROM urls
+                LEFT OUTER JOIN url_checks
+                ON urls.id = url_checks.url_id
+                AND url_checks.id = (
+                    SELECT MAX(id)
+                    FROM url_checks
+                    WHERE url_checks.url_id = urls.id
+                )
+                ORDER BY urls.id DESC;
             """
         )
         return cursor.fetchall()
@@ -52,18 +62,6 @@ def create_check(connection, id, status_code, h1, title, description):
                 VALUES (%s, %s, %s, %s, %s, %s);
             """, (id, status_code, h1, title, description, current_date,)
         )
-
-
-def get_last_check(connection):
-    with connection.cursor(cursor_factory=NamedTupleCursor) as cursor:
-        cursor.execute(
-            """SELECT DISTINCT ON (url_id)
-                id, url_id, status_code, h1, title, description, created_at
-                FROM url_checks
-                ORDER BY url_id, created_at DESC;
-            """
-        )
-        return cursor.fetchall()
 
 
 def get_all_checks(connection, id):
