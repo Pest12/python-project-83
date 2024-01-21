@@ -1,3 +1,3 @@
-!/usr/bin/env bash
+#!/usr/bin/env bash
 
-make install && psql -a -d $DATABASE_URL -f database.sql
+psql $DATABASE_URL -a -f database.sql

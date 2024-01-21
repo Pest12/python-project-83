@@ -18,7 +18,7 @@ Page analyzer is a website that analyzes the specified pages for SEO suitability
 Clone the repository `git clone git@github.com:Pest12/python-project-83.git` and use this commands:
 
 ```
-make install
+make build
 make start
 ```
 
@@ -30,6 +30,6 @@ make start
 
 
 To run the site locally on the development server, you need to:
-- Create a database and two tables. The tables structure can be found in database.sql
-- Fill `DATABASE_URL` and `SECRET_KEY` in .env.sample
-- Run ```make local```
+- Create a file `.env` based on `.env.sample` `cp .env.sample .env`
+- Fill `DATABASE_URL` and `SECRET_KEY` in .env
+- Run `make dev`
