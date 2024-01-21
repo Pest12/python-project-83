@@ -4,7 +4,7 @@ import requests
 from flask import Flask, render_template, request, flash, redirect, url_for
 from dotenv import load_dotenv
 from contextlib import contextmanager
-from page_analyzer.html import get_seo
+from page_analyzer.html import get_seo_content
 from page_analyzer import database
 from page_analyzer.urls import validate, get_normalized_url
 
@@ -68,8 +68,8 @@ def add_url():
             flash('Страница уже существует', 'info')
             return redirect(url_for('url_info', id=check_url[0]))
         url_id = database.create_url(conn, normalized_url)
-    flash('Страница успешно добавлена', 'success')
-    return redirect(url_for('url_info', id=url_id))
+        flash('Страница успешно добавлена', 'success')
+        return redirect(url_for('url_info', id=url_id))
 
 
 @app.route("/urls/<int:id>")
@@ -92,8 +92,9 @@ def url_check(id):
             request = requests.get(url.name)
             request.raise_for_status()
             status_code = request.status_code
-            title, h1, description = get_seo(request.text)
-            database.create_check(conn, id, status_code, h1, title, description)
+            title, header_title, description = get_seo_content(request.text)
+            database.create_check(conn, id, status_code,
+                                  header_title, title, description)
             flash('Страница успешно проверена', 'success')
             return redirect(url_for('url_info', id=id))
         except requests.RequestException:

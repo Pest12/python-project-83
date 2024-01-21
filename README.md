@@ -15,7 +15,7 @@ Page analyzer is a website that analyzes the specified pages for SEO suitability
 ## Installation
 
 
-Clone the repository and use this commands:
+Clone the repository `git clone git@github.com:Pest12/python-project-83.git` and use this commands:
 
 ```
 make install
